@@ -52,32 +52,34 @@
     background: rgba(0, 212, 255, 0.5);
   }
 
-  :global(@keyframes slideIn) {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
+  :global {
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
 
-  :global(@keyframes pulse) {
-    0%, 100% {
-      opacity: 1;
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
     }
-    50% {
-      opacity: 0.5;
-    }
-  }
 
-  :global(@keyframes shimmer) {
-    0% {
-      background-position: -1000px 0;
-    }
-    100% {
-      background-position: 1000px 0;
+    @keyframes shimmer {
+      0% {
+        background-position: -1000px 0;
+      }
+      100% {
+        background-position: 1000px 0;
+      }
     }
   }
 

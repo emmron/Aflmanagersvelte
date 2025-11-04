@@ -10,7 +10,7 @@
 
   let sortBy = $state<'position' | 'name' | 'form' | 'fitness'>('position');
 
-  let sortedPlayers = $derived(() => {
+  let sortedPlayers = $derived.by(() => {
     const players = [...team.players];
 
     switch (sortBy) {
@@ -29,7 +29,7 @@
           return aIndex - bIndex;
         });
     }
-  }());
+  });
 
   function getFormColor(form: number): string {
     if (form >= 80) return '#00ff88';
