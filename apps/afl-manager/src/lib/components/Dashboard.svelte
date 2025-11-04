@@ -4,12 +4,19 @@
   import MatchResults from './MatchResults.svelte';
   import TeamView from './TeamView.svelte';
   import TacticsPanel from './TacticsPanel.svelte';
+  import FixturesView from './FixturesView.svelte';
+  import StatsLeaders from './StatsLeaders.svelte';
+  import MatchCenter from './MatchCenter.svelte';
+  import PlayerModal from './PlayerModal.svelte';
+  import type { Match, Player } from '../types';
 
   let gameState = $derived(getGameState());
   let ladder = $derived(getLadder());
   let matches = $derived(getCurrentRoundMatches());
 
-  let activeTab = $state<'overview' | 'team' | 'tactics' | 'ladder'>('overview');
+  let activeTab = $state<'overview' | 'team' | 'tactics' | 'ladder' | 'fixtures' | 'stats'>('overview');
+  let selectedMatch = $state<Match | null>(null);
+  let selectedPlayer = $state<Player | null>(null);
 </script>
 
 <div class="dashboard">
@@ -26,25 +33,37 @@
       class:active={activeTab === 'overview'}
       onclick={() => activeTab = 'overview'}
     >
-      Overview
+      🏠 Overview
     </button>
     <button
       class:active={activeTab === 'team'}
       onclick={() => activeTab = 'team'}
     >
-      My Team
+      👥 My Team
     </button>
     <button
       class:active={activeTab === 'tactics'}
       onclick={() => activeTab = 'tactics'}
     >
-      Tactics
+      📋 Tactics
+    </button>
+    <button
+      class:active={activeTab === 'fixtures'}
+      onclick={() => activeTab = 'fixtures'}
+    >
+      📅 Fixtures
     </button>
     <button
       class:active={activeTab === 'ladder'}
       onclick={() => activeTab = 'ladder'}
     >
-      Ladder
+      🏆 Ladder
+    </button>
+    <button
+      class:active={activeTab === 'stats'}
+      onclick={() => activeTab = 'stats'}
+    >
+      📊 Leaders
     </button>
   </nav>
 
@@ -75,7 +94,7 @@
 
         <div class="recent-matches">
           <h3>Recent Matches</h3>
-          <MatchResults {matches} />
+          <MatchResults matches={matches} onMatchClick={(match) => selectedMatch = match} />
         </div>
 
         <div class="ladder-preview">
@@ -84,13 +103,25 @@
         </div>
       </div>
     {:else if activeTab === 'team'}
-      <TeamView team={gameState.season.playerTeam} />
+      <TeamView team={gameState.season.playerTeam} onPlayerClick={(player) => selectedPlayer = player} />
     {:else if activeTab === 'tactics'}
       <TacticsPanel />
+    {:else if activeTab === 'fixtures'}
+      <FixturesView matches={gameState.season.matches} currentRound={gameState.season.currentRound} />
     {:else if activeTab === 'ladder'}
       <Ladder teams={ladder} />
+    {:else if activeTab === 'stats'}
+      <StatsLeaders teams={gameState.season.teams} />
     {/if}
   </main>
+
+  {#if selectedMatch}
+    <MatchCenter match={selectedMatch} onClose={() => selectedMatch = null} />
+  {/if}
+
+  {#if selectedPlayer}
+    <PlayerModal player={selectedPlayer} onClose={() => selectedPlayer = null} />
+  {/if}
 </div>
 
 <style>
@@ -125,20 +156,23 @@
 
   .tabs {
     display: flex;
-    gap: 1rem;
+    gap: 0.5rem;
     padding: 1rem 2rem;
     background: rgba(0, 0, 0, 0.2);
     border-bottom: 1px solid #333;
+    overflow-x: auto;
   }
 
   .tabs button {
-    padding: 0.5rem 1.5rem;
+    padding: 0.75rem 1.25rem;
     background: transparent;
     border: 1px solid #444;
     color: #aaa;
     cursor: pointer;
     border-radius: 4px;
     transition: all 0.2s;
+    white-space: nowrap;
+    font-weight: 600;
   }
 
   .tabs button:hover {

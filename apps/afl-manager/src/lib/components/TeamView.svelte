@@ -3,9 +3,10 @@
 
   interface Props {
     team: Team;
+    onPlayerClick?: (player: Player) => void;
   }
 
-  let { team }: Props = $props();
+  let { team, onPlayerClick }: Props = $props();
 
   let sortBy = $state<'position' | 'name' | 'form' | 'fitness'>('position');
 
@@ -83,7 +84,11 @@
       </thead>
       <tbody>
         {#each sortedPlayers as player}
-          <tr class:injured={player.injured}>
+          <tr
+            class:injured={player.injured}
+            class:clickable={onPlayerClick}
+            onclick={() => onPlayerClick && onPlayerClick(player)}
+          >
             <td class="number">{player.number}</td>
             <td class="name">
               {player.firstName} {player.lastName}
@@ -196,6 +201,14 @@
 
   tr:hover {
     background: rgba(0, 212, 255, 0.05);
+  }
+
+  tr.clickable {
+    cursor: pointer;
+  }
+
+  tr.clickable:hover {
+    background: rgba(0, 212, 255, 0.1);
   }
 
   tr.injured {

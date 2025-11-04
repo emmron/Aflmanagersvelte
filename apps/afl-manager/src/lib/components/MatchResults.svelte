@@ -3,9 +3,10 @@
 
   interface Props {
     matches: Match[];
+    onMatchClick?: (match: Match) => void;
   }
 
-  let { matches }: Props = $props();
+  let { matches, onMatchClick }: Props = $props();
 </script>
 
 <div class="match-results">
@@ -13,10 +14,17 @@
     <p class="no-matches">No matches played yet</p>
   {:else}
     {#each matches as match}
-      <div class="match-card">
+      <div
+        class="match-card"
+        class:clickable={onMatchClick && match.completed}
+        onclick={() => onMatchClick && match.completed && onMatchClick(match)}
+      >
         <div class="match-header">
           <span class="round">Round {match.round}</span>
           <span class="venue">{match.venue}</span>
+          {#if match.completed && onMatchClick}
+            <span class="view-details">View Details →</span>
+          {/if}
         </div>
 
         <div class="match-body">
@@ -68,6 +76,17 @@
     border: 1px solid #444;
     border-radius: 6px;
     padding: 1rem;
+    transition: all 0.2s;
+  }
+
+  .match-card.clickable {
+    cursor: pointer;
+  }
+
+  .match-card.clickable:hover {
+    background: rgba(0, 212, 255, 0.05);
+    border-color: #00d4ff;
+    transform: translateY(-2px);
   }
 
   .match-header {
@@ -81,6 +100,12 @@
   .round {
     font-weight: 600;
     color: #00d4ff;
+  }
+
+  .view-details {
+    font-size: 0.75rem;
+    color: #00d4ff;
+    font-weight: 600;
   }
 
   .match-body {

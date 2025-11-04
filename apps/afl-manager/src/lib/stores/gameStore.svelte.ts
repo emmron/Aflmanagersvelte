@@ -3,6 +3,8 @@ import { initializeTeams } from '../data/teams';
 import { simulateMatch, updateTeamStats, updatePlayerStats } from '../engine/matchSimulation';
 
 // Create reactive state using Svelte 5 runes
+let teamSelected = $state(false);
+
 let gameState = $state<GameState>({
   season: {
     year: 2025,
@@ -22,11 +24,12 @@ let gameState = $state<GameState>({
   viewingStats: false,
 });
 
-// Initialize player team (first team by default)
-gameState.season.playerTeam = gameState.season.teams[0];
-
 export function getGameState() {
   return gameState;
+}
+
+export function isTeamSelected() {
+  return teamSelected;
 }
 
 // Select team for player to manage
@@ -34,6 +37,7 @@ export function selectTeam(teamId: string) {
   const team = gameState.season.teams.find((t) => t.id === teamId);
   if (team) {
     gameState.season.playerTeam = team;
+    teamSelected = true;
   }
 }
 
