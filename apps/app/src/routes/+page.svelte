@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { beforeNavigate, goto, invalidate } from '$app/navigation';
+  import { beforeNavigate, afterNavigate, goto, invalidate } from '$app/navigation';
   import {
     Modal,
     CROSS,
@@ -29,6 +29,12 @@
   beforeNavigate(() => {
     if ($loading_screen) {
       $loading_screen.expanded = true;
+    }
+  });
+
+  afterNavigate(() => {
+    if ($loading_screen) {
+      $loading_screen.expanded = false;
     }
   });
 

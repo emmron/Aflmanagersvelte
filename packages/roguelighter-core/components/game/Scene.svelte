@@ -26,6 +26,7 @@
   import { DEFAULT_CAMERA_ZOOM } from '../../constants';
   import { Box3 } from 'three';
   import { SvelteMap } from 'svelte/reactivity';
+  import { T } from '@threlte/core';
 
   let {
     bg_asset_urls,
@@ -40,7 +41,7 @@
     on_error
   }: Props = $props();
 
-  let zoom = settings.camera?.zoom || DEFAULT_CAMERA_ZOOM;
+  let zoom = $derived(settings.camera?.zoom || DEFAULT_CAMERA_ZOOM);
 
   function calc_pos(pos: number, offsetX = 0, offsetY = 0): [number, number, number] {
     return [(pos % scene.width) + offsetX, -Math.floor(pos / scene.width) + offsetY, 0];
@@ -94,19 +95,61 @@
         if (agent_box_1.intersectsBox(agent_box_2)) {
           if (aa_collisions.has(id_1)) {
             let existing_set = aa_collisions.get(id_1);
-            existing_set?.add(id_2);
-            // @ts-expect-error
-            aa_collisions.set(id_1, existing_set);
+
+            if (!existing_set?.has(id_2)) {
+              existing_set?.add(id_2);
+              // @ts-expect-error
+              aa_collisions.set(id_1, existing_set);
+
+              // Trigger oncollision for both agents
+              agent_components[id_1]?.oncollision({
+                id: +id_2,
+                type: 'agent',
+                name: agent_entries[j][0]
+              });
+              agent_components[id_2]?.oncollision({
+                id: +id_1,
+                type: 'agent',
+                name: agent_entries[i][0]
+              });
+            }
           } else {
             // @ts-expect-error
-            aa_collisions.set(id_1, new Set(id_2));
+            aa_collisions.set(id_1, new Set([id_2]));
+
+            // Trigger oncollision for both agents on first collision
+            agent_components[id_1]?.oncollision({
+              id: +id_2,
+              type: 'agent',
+              name: agent_entries[j][0]
+            });
+            agent_components[id_2]?.oncollision({
+              id: +id_1,
+              type: 'agent',
+              name: agent_entries[i][0]
+            });
           }
         } else {
           if (aa_collisions.has(id_1)) {
             let existing_set = aa_collisions.get(id_1);
-            existing_set?.delete(id_2);
-            // @ts-expect-error
-            aa_collisions.set(id_1, existing_set);
+
+            if (existing_set?.has(id_2)) {
+              existing_set?.delete(id_2);
+              // @ts-expect-error
+              aa_collisions.set(id_1, existing_set);
+
+              // Trigger onseparation for both agents
+              agent_components[id_1]?.onseparation({
+                id: +id_2,
+                type: 'agent',
+                name: agent_entries[j][0]
+              });
+              agent_components[id_2]?.onseparation({
+                id: +id_1,
+                type: 'agent',
+                name: agent_entries[i][0]
+              });
+            }
           }
         }
       }
@@ -130,7 +173,13 @@
             }
           } else {
             // @ts-expect-error
-            ab_collisions.set(id_1, new Set(bg_id));
+            ab_collisions.set(id_1, new Set([bg_id]));
+
+            agent_components[id_1].oncollision({
+              id: +bg_id,
+              type: 'background',
+              name: scene.backgrounds.get(+bg_id)
+            });
           }
         } else if (ab_collisions.has(id_1)) {
           let existing_set = ab_collisions.get(id_1);
@@ -162,6 +211,12 @@
     }
   }
 </script>
+
+<T.OrthographicCamera
+  makeDefault
+  {zoom}
+  position={[scene.width / 2, -scene.height / 2, 10]}
+/>
 
 {#each scene.backgrounds.entries() as [pos, texture]}
   <Floor
