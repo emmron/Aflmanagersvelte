@@ -1986,9 +1986,9 @@ export type SeparationHandler = CollisionHandler;
  */
 export interface AgentConfig<K extends keyof AgentStates> {
   /**
-   * TODO: doc
+   * Custom properties for the agent that can be accessed and modified
    */
-  // props?: { [key: string]: any };
+  props?: { [key: string]: any };
   /**
    * TODO: doc
    */
@@ -2003,6 +2003,10 @@ export interface AgentConfig<K extends keyof AgentStates> {
    * Fired whenever a collision is ended with an entity
    */
   onseparation?: SeparationHandler;
+  /**
+   * Fired when the agent is destroyed
+   */
+  ondestroy?: () => void;
 }
 
 export type Agents = {

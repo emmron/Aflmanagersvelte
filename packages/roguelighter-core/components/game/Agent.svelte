@@ -93,6 +93,14 @@
 
   const { stop } = useTask(
     (delta: number) => {
+      // Wait for all positions to be calculated before starting game logic
+      if (!all_positions_calculated) {
+        // @ts-expect-error
+        _box.copy(sprite.geometry.boundingBox).applyMatrix4(sprite.matrixWorld);
+        box = _box;
+        return;
+      }
+
       t += delta;
 
       try {

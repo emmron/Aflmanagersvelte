@@ -136,7 +136,7 @@ const event_handler_parameter_appender = (context: ts.TransformationContext) => 
 
 const function_parameter_appender = (context: ts.TransformationContext) => {
   const visit: ts.Visitor = (node) => {
-    if (ts.isFunctionExpression(node)) {
+    if (ts.isFunctionExpression(node) || ts.isFunctionDeclaration(node)) {
       const variables_param = ts.factory.createParameterDeclaration(
         undefined,
         undefined,
@@ -160,18 +160,33 @@ const function_parameter_appender = (context: ts.TransformationContext) => {
 
       const updated_params = [...node.parameters, variables_param, functions_param, process_param];
 
-      const modified_function = ts.factory.updateFunctionExpression(
-        node,
-        node.modifiers,
-        node.asteriskToken,
-        node.name,
-        node.typeParameters,
-        updated_params,
-        node.type,
-        node.body
-      );
+      if (ts.isFunctionExpression(node)) {
+        const modified_function = ts.factory.updateFunctionExpression(
+          node,
+          node.modifiers,
+          node.asteriskToken,
+          node.name,
+          node.typeParameters,
+          updated_params,
+          node.type,
+          node.body
+        );
 
-      return modified_function;
+        return modified_function;
+      } else {
+        const modified_function = ts.factory.updateFunctionDeclaration(
+          node,
+          node.modifiers,
+          node.asteriskToken,
+          node.name,
+          node.typeParameters,
+          updated_params,
+          node.type,
+          node.body
+        );
+
+        return modified_function;
+      }
     }
 
     return ts.visitEachChild(node, visit, context);
@@ -190,6 +205,24 @@ const function_stringifier = (context: ts.TransformationContext) => {
       const functionString = printer.printNode(ts.EmitHint.Unspecified, node, sourceFile);
 
       return ts.factory.createStringLiteral(functionString);
+    }
+
+    if (ts.isFunctionDeclaration(node) && node.name) {
+      // Convert function declaration to a function expression property assignment
+      const functionString = printer.printNode(
+        ts.EmitHint.Unspecified,
+        node,
+        // @ts-expect-error
+        ts.getSourceFileOfNode(node)
+      );
+
+      // Convert "function foo() {}" to "foo: function() {}"
+      const functionExpression = functionString.replace(/^function\s+\w+/, 'function');
+
+      return ts.factory.createPropertyAssignment(
+        node.name,
+        ts.factory.createStringLiteral(functionExpression)
+      );
     }
 
     if (ts.isMethodDeclaration(node)) {

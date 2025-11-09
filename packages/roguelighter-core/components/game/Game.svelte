@@ -67,9 +67,13 @@
   let scenes = new Map<number, PlayableScene>();
   let scene_just_changed = $state(false);
   let player_pos = $state(0);
+  let agents_to_destroy = $state<Set<number>>(new Set());
 
   const PROCESS = {
-    exit: on_exit
+    exit: on_exit,
+    destroy: (agent_id: number) => {
+      agents_to_destroy.add(agent_id);
+    }
   };
 
   function transform_scenes() {
@@ -86,11 +90,14 @@
           name,
           x,
           y,
+          props: agent.props || {},
           states: agent.states,
           oncollision:
             'oncollision' in agent ? new Function('return ' + agent.oncollision)() : noop,
           onseparation:
             'onseparation' in agent ? new Function('return ' + agent.onseparation)() : noop,
+          ondestroy:
+            'ondestroy' in agent ? new Function('return ' + agent.ondestroy)() : noop,
           state: 'default'
         });
 
@@ -172,6 +179,7 @@
         bind:functions
         {PROCESS}
         {on_error}
+        bind:agents_to_destroy
       />
     </Canvas>
 

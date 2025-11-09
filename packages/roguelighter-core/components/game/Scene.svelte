@@ -10,6 +10,7 @@
     functions: any;
     PROCESS: any;
     on_error: OnError;
+    agents_to_destroy: Set<number>;
   }
 </script>
 
@@ -38,7 +39,8 @@
     variables = $bindable(),
     functions = $bindable(),
     PROCESS,
-    on_error
+    on_error,
+    agents_to_destroy = $bindable()
   }: Props = $props();
 
   let zoom = $derived(settings.camera?.zoom || DEFAULT_CAMERA_ZOOM);
@@ -210,6 +212,30 @@
       all_positions_calculated = true;
     }
   }
+
+  $effect(() => {
+    if (agents_to_destroy.size > 0) {
+      for (let agent_id of agents_to_destroy) {
+        if (agent_components[agent_id]) {
+          // Call ondestroy handler if it exists
+          const agent = scene.agents.get(agent_id);
+          if (agent?.ondestroy) {
+            try {
+              // @ts-expect-error
+              agent.ondestroy(variables, functions, PROCESS);
+            } catch (e) {
+              console.error('Agent ondestroy failed:', e);
+            }
+          }
+          // Remove agent from scene
+          scene.agents.delete(agent_id);
+          delete agent_components[agent_id];
+          delete agent_boxes[agent_id];
+        }
+      }
+      agents_to_destroy.clear();
+    }
+  });
 </script>
 
 <T.OrthographicCamera
