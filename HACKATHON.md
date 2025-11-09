@@ -94,6 +94,15 @@
 - ✅ Vercel deployment configuration
 - ✅ Website build optimization
 
+### Phase 5: Critical Bug Fixes & Polish (Current Session)
+- ✅ Fixed zoom settings not working properly
+- ✅ Fixed agent-to-agent collision detection
+- ✅ Fixed project selection after navigation
+- ✅ Added agent properties system (agents[name].props)
+- ✅ Implemented agent destroy functionality (PROCESS.destroy)
+- ✅ Fixed starting position synchronization issue
+- ✅ Added regular function declaration support
+
 ---
 
 ## Technical Architecture
@@ -133,25 +142,35 @@
 - ❌ Audio system
 - ❌ Pathfinding/AI
 
-### Known Bugs (From Backlog)
-- 🐛 Agent collision detection fails in for loops
-- 🐛 Starting position tick out of sync
-- 🐛 Cannot select project after returning from project view
-- 🐛 Zoom settings not working correctly
+### Bugs Fixed in Current Session
+- ✅ Agent collision detection in for loops
+- ✅ Starting position tick synchronization
+- ✅ Project selection after navigation
+- ✅ Zoom settings reactivity
+- ✅ Agent-to-agent collision callbacks
+- ✅ Loading screen blocking navigation
+
+### Features Added in Current Session
+- ✅ Agent properties system (`agents[name].props`)
+- ✅ Agent destroy function (`PROCESS.destroy`)
+- ✅ Regular function declarations
+- ✅ Reactive camera zoom
+- ✅ Agent lifecycle callbacks (ondestroy)
+
+### Remaining Bugs
 - 🐛 Editor styles sometimes fail to load
 - 🐛 OS-level shortcuts conflict with editor hotkeys
 - 🐛 Type inference for nested object variables
+- 🐛 VM-level TypeError when using Tauri watch
 
 ### Pending Features
 - 📋 Logs view in UI
 - 📋 Download logs functionality
 - 📋 Dev-only scenes support
-- 📋 `agents[name].props` API
 - 📋 `roguelighter/options.json` configuration
 - 📋 Ctrl+Q hotkey for view switching
-- 📋 Regular function declarations (currently only expressions)
-- 📋 Destroy functions for agent cleanup
 - 📋 Object type support improvements
+- 📋 Code folding state persistence
 
 ---
 
@@ -170,11 +189,15 @@
 - ✨ Type-safe scripting with TypeScript
 - ✨ Visual scene and code editors
 - ✨ 16 comprehensive examples
-- ✨ Collision detection with callbacks
+- ✨ Collision detection with callbacks (agent-agent & agent-background)
 - ✨ Powerful GUI system with Tailwind
 - ✨ Multi-platform support (Web + Desktop)
 - ✨ Complete documentation
 - ✨ Production-ready website deployment
+- ✨ Agent properties and lifecycle management
+- ✨ Reactive camera zoom controls
+- ✨ Synchronized collision initialization
+- ✨ Regular & arrow function support
 
 ---
 
