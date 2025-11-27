@@ -16,6 +16,9 @@ const viteServerConfig: Plugin = {
 
 export default defineConfig({
   plugins: [sveltekit(), viteServerConfig],
+  optimizeDeps: {
+    exclude: ['roguelighter-core']
+  },
   build: {
     commonjsOptions: {
       include: [/roguelighter-core/, /node_modules/]

@@ -48,6 +48,8 @@
   let agents: Setup['agents'] = $state();
   let code_editor: any = $state();
   let initialized = $state(false);
+  let exporting = $state(false);
+  let export_status = $state('');
   let code_with_errors = $state('');
   let error_line = $state(0);
   let parse_errors: ParseErrorObject = $state({ code: '', json_string: '', error: '' });
@@ -132,48 +134,185 @@
     // 'export'
   ];
 
-  async function copy_assets() {}
+  async function copy_assets(source_path: string, dest_path: string) {
+    try {
+      // Use platform-appropriate copy command
+      const isWindows = navigator.userAgent.includes('Windows');
+      let copyCommand: ReturnType<typeof Command.create>;
+
+      if (isWindows) {
+        copyCommand = Command.create('cmd', ['/C', `xcopy "${source_path}" "${dest_path}" /E /I /Y`], {
+          encoding: 'utf-8'
+        });
+      } else {
+        copyCommand = Command.create('sh', ['-c', `cp -r "${source_path}"/* "${dest_path}/"`], {
+          encoding: 'utf-8'
+        });
+      }
+
+      await copyCommand.execute();
+    } catch (e) {
+      console.error('Failed to copy assets:', e);
+      throw e;
+    }
+  }
 
   async function export_game() {
-    const project_path = await join(document_path, `${PROJECTS_DIR}/${project.name}`);
+    if (exporting || isWeb) return;
 
-    const bat_name = 'export';
-    const bat_content = `
-cd ../..
+    exporting = true;
+    export_status = 'Saving project...';
+
+    try {
+      // First save the current state
+      save_file();
+
+      const project_path = await join(document_path, `${PROJECTS_DIR}/${project.name}`);
+      const export_path = await join(document_path, EXPORT_DIR);
+      const export_project_path = await join(export_path, project.name);
+
+      export_status = 'Creating export directory...';
+
+      const isWindows = navigator.userAgent.includes('Windows');
+      const bat_name = isWindows ? 'export.bat' : 'export.sh';
+
+      // Create export script content based on platform
+      let script_content: string;
+
+      if (isWindows) {
+        script_content = `@echo off
+cd /d "${document_path}"
 
 if not exist "${EXPORT_DIR}" (
   mkdir "${EXPORT_DIR}"
 )
 
 cd "${EXPORT_DIR}"
-git clone --filter=blob:none --sparse https://github.com/roguelighterengine/roguelighter ${project.name}
-cd ${project.name}
-git sparse-checkout add apps/export-app
-git sparse-checkout add packages/roguelighter-core
-npm i
-cd apps/export-app
-npm i
 
-robocopy ${project_path}/assets %cd%/static \\e
+if not exist "${project.name}" (
+  git clone --filter=blob:none --sparse https://github.com/roguelighterengine/roguelighter "${project.name}"
+  cd "${project.name}"
+  git sparse-checkout add apps/export-app
+  git sparse-checkout add packages/roguelighter-core
+) else (
+  cd "${project.name}"
+  git pull
+)
+
+call npm install
+cd apps\\export-app
+call npm install
+
+if not exist "static\\assets" mkdir "static\\assets"
+xcopy "${project_path}\\assets" "static\\assets" /E /I /Y
+
+copy "${project_path}\\data.json" "src\\lib\\data.json" /Y
+
+call npm run build
+
+echo.
+echo Export completed! Check ${export_project_path}\\apps\\export-app\\build
+pause
+`;
+      } else {
+        script_content = `#!/bin/bash
+cd "${document_path}"
+
+mkdir -p "${EXPORT_DIR}"
+cd "${EXPORT_DIR}"
+
+if [ ! -d "${project.name}" ]; then
+  git clone --filter=blob:none --sparse https://github.com/roguelighterengine/roguelighter "${project.name}"
+  cd "${project.name}"
+  git sparse-checkout add apps/export-app
+  git sparse-checkout add packages/roguelighter-core
+else
+  cd "${project.name}"
+  git pull
+fi
+
+npm install
+cd apps/export-app
+npm install
+
+mkdir -p static/assets
+cp -r "${project_path}/assets/"* static/assets/
+
+cp "${project_path}/data.json" src/lib/data.json
 
 npm run build
 
-cd ${project_path}
-del ${bat_name}.bat
-
+echo ""
+echo "Export completed! Check ${export_project_path}/apps/export-app/build"
 `;
+      }
 
-    await writeTextFile(project_path + '/' + bat_name + '.bat', bat_content);
+      export_status = 'Writing export script...';
+      await writeTextFile(`${project_path}/${bat_name}`, script_content);
 
-    for (let command of commands) {
-      let c = Command.create('cmd', ['/C', command], { cwd: project_path, encoding: 'utf-8' });
-      c.on('close', (data) => {
-        console.log(`command finished with code ${data.code} and signal ${data.signal}`);
+      export_status = 'Starting export process...';
+
+      // Execute the export script
+      let exportCommand: ReturnType<typeof Command.create>;
+
+      if (isWindows) {
+        exportCommand = Command.create('cmd', ['/C', `"${project_path}\\${bat_name}"`], {
+          cwd: project_path,
+          encoding: 'utf-8'
+        });
+      } else {
+        // Make script executable first
+        await Command.create('sh', ['-c', `chmod +x "${project_path}/${bat_name}"`], {
+          encoding: 'utf-8'
+        }).execute();
+
+        exportCommand = Command.create('sh', ['-c', `"${project_path}/${bat_name}"`], {
+          cwd: project_path,
+          encoding: 'utf-8'
+        });
+      }
+
+      exportCommand.on('close', (data) => {
+        if (data.code === 0) {
+          export_status = 'Export completed successfully!';
+        } else {
+          export_status = `Export finished with code ${data.code}`;
+        }
+        setTimeout(() => {
+          exporting = false;
+          export_status = '';
+        }, 3000);
       });
-      c.on('error', (error) => console.error(`command error: "${error}"`));
-      c.stdout.on('data', (line) => console.log(`command stdout: "${line}"`));
-      c.stderr.on('data', (line) => console.log(`command stderr: "${line}"`));
-      await c.execute();
+
+      exportCommand.on('error', (error) => {
+        console.error(`Export error: "${error}"`);
+        export_status = `Export failed: ${error}`;
+        setTimeout(() => {
+          exporting = false;
+          export_status = '';
+        }, 3000);
+      });
+
+      exportCommand.stdout.on('data', (line) => {
+        console.log(`export stdout: "${line}"`);
+        if (line.trim()) {
+          export_status = line.trim().slice(0, 50);
+        }
+      });
+
+      exportCommand.stderr.on('data', (line) => {
+        console.log(`export stderr: "${line}"`);
+      });
+
+      await exportCommand.execute();
+
+    } catch (e) {
+      console.error('Export failed:', e);
+      export_status = `Export failed: ${e}`;
+      setTimeout(() => {
+        exporting = false;
+        export_status = '';
+      }, 3000);
     }
   }
 
@@ -314,7 +453,18 @@ del ${bat_name}.bat
           }}>Scene</button
         >
       </div>
-      <button>Export</button>
+      <button
+        class="btn-outline hover:btn-primary disabled:opacity-50"
+        onclick={export_game}
+        disabled={exporting || isWeb}
+        title={isWeb ? 'Export is only available in the desktop app' : ''}
+      >
+        {#if exporting}
+          <span class="animate-pulse">{export_status || 'Exporting...'}</span>
+        {:else}
+          Export
+        {/if}
+      </button>
     </nav>
     {#if view == 'scene'}
       <SceneEditor
