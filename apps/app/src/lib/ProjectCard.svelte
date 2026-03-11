@@ -1,13 +1,12 @@
-<script module>
-  interface Props {
-    project: DirEntry;
-    delete_project: Function;
-  }
-</script>
-
 <script lang="ts">
   import type { DirEntry } from '@tauri-apps/plugin-fs';
   import { Dropdown } from 'roguelighter-core';
+
+  interface Props {
+    project: DirEntry;
+    delete_project: () => void;
+  }
+
   let { project, delete_project }: Props = $props();
 </script>
 
