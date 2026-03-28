@@ -9,6 +9,8 @@ export * from './utils';
 
 // BASE ENGINE
 export { default as Engine } from './components/Engine.svelte';
+export { default as Logs } from './components/Logs.svelte';
+export { default as Options } from './components/Options.svelte';
 
 // EDITOR
 export { default as Modal } from './components/editor/Modal.svelte';
