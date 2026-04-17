@@ -1,0 +1,9 @@
+apps/app/src-tauri
+apps/experiment
+apps/vite-app
+apps/export-app
+**/.svelte-kit
+**/node_modules
+**/dist
+**/build
+**/.turbo
